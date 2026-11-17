@@ -44,6 +44,11 @@ usage() { sed -n '3,20p' "$0" | sed 's/^# \{0,1\}//'; exit "${1:-0}"; }
 log()   { printf '\n\033[1;34m==> %s\033[0m\n' "$*"; }
 die()   { printf '\033[1;31mERROR: %s\033[0m\n' "$*" >&2; exit 1; }
 
+# Bunya has one module tree per CPU generation (epyc3, epyc4, epyc5, ...), each
+# compiled for that CPU. A build only runs on nodes of the generation it was
+# built on, so record it for the launcher to check.
+cpu_arch() { grep -oE '/sw/auto/[^/]+/[^/:]+/modules' <<<"$MODULEPATH" | head -1 | cut -d/ -f5 | cut -d_ -f1; }
+
 while getopts "v:j:w:knh" opt; do
     case "$opt" in
         v) CC_VERSION="$OPTARG" ;;
@@ -79,6 +84,8 @@ for m in "${MODULES[@]}"; do
     module load "$m" || die "failed to load module $m"
 done
 module list 2>&1
+BUILD_ARCH="$(cpu_arch)"
+echo "CPU type       : ${BUILD_ARCH:-unknown}"
 
 WORKDIR="$(mktemp -d "${WORKBASE%/}/cloudcompare-build-${USER}-XXXXXX")"
 DEPS="$PREFIX/deps"
@@ -224,6 +231,7 @@ cmake --install "$WORKDIR/build"
 #   cloudcompare -SILENT ...         command-line mode, no display needed
 CC_BIN="$PREFIX/bin/CloudCompare"
 CC_MODULES="${RUNTIME_MODULES[*]}"
+BUILD_ARCH="$BUILD_ARCH"
 CC_LIBPATH="$PREFIX/lib/cloudcompare:$DEPS/laszip/lib"
 EOF
     cat <<'EOF'
@@ -235,6 +243,8 @@ if ! type module &>/dev/null; then
 fi
 # shellcheck disable=SC2086
 module load $CC_MODULES &>/dev/null || die "failed to load modules: $CC_MODULES"
+cpu_arch() { grep -oE '/sw/auto/[^/]+/[^/:]+/modules' <<<"$MODULEPATH" | head -1 | cut -d/ -f5 | cut -d_ -f1; }
+[[ "$(cpu_arch)" == "$BUILD_ARCH" ]] || die "built for ${BUILD_ARCH} nodes, but this node is $(cpu_arch). Run it on a ${BUILD_ARCH} node or rebuild here."
 export LD_LIBRARY_PATH="$CC_LIBPATH${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
 
 silent=0

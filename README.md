@@ -33,6 +33,12 @@ help. Re-running a script on the same directory updates the install in place.
   [below](#building-in-a-batch-job)) or run them in an interactive session.
 - **GUI programs need a desktop session**, e.g. an Open OnDemand desktop. The
   launchers start the GUI through VirtualGL, so it renders on the GPU.
+- **Build on the type of node you'll run on.** Bunya has a separate module
+  tree for each CPU generation (epyc3, epyc4, epyc5), each compiled for that
+  CPU. A program built on an epyc5 node crashes with `Illegal instruction` on
+  older nodes. The desktop (`gpu_viz`) nodes are mostly epyc3, so build there
+  with `#SBATCH --constraint=epyc3`. The launchers check this and tell you if
+  the node doesn't match.
 - **Choose a lasting install directory**, such as
   `/scratch/user/$USER/software/<name>` or a group directory. Don't install to
   `$TMPDIR`: it is deleted when your job ends.
@@ -156,6 +162,7 @@ extracted them; see the [Sylva install guide](https://uq-eorc.github.io/Sylva/in
 #!/bin/bash
 #SBATCH --job-name=build_qgis
 #SBATCH --partition=general
+#SBATCH --constraint=epyc3
 #SBATCH --nodes=1
 #SBATCH --cpus-per-task=16
 #SBATCH --mem=32G
@@ -176,5 +183,9 @@ the progress in `build_qgis-<jobid>.out`. For CloudCompare, 2 hours is plenty.
   built against have been removed from the cluster. Re-run the install script
   to rebuild against the current ones (update the module versions at the top
   of the script if they no longer exist).
+- **`built for epyc5 nodes, but this node is epyc3`** (or `Illegal
+  instruction` from an older install): the program was compiled on a different
+  CPU generation. Run it on a matching node, or rebuild on the node type you
+  use. Re-running the build script rebuilds everything for the new CPU type.
 - **`no DISPLAY`**: you started a GUI program outside a desktop session. Use an
   Open OnDemand desktop, or the command-line modes shown above.
