@@ -142,6 +142,10 @@ export PATH="$VENV/bin:$DEPS/bin:$PATH"
 is_built()   { [[ -e "$DEPS/.built/$1-$2-$BUILD_ARCH" ]]; }
 mark_built() { rm -f "$DEPS/.built/$1-"*; touch "$DEPS/.built/$1-$2-$BUILD_ARCH"; }
 
+# A venv left by a build for another CPU type links to that type's python,
+# which crashes here; it is on PATH, so remove it before anything runs python3.
+is_built venv "$SIP_VERSION" || rm -rf "$VENV"
+
 # fetch_git DIR URL TAG
 fetch_git() {
     rm -rf "$SRC/$1"
