@@ -461,7 +461,9 @@ EOF
 
 if [[ $UPDATE_BASHRC -eq 1 ]]; then
     log "Adding QGIS to the desktop and applications menu"
-    for dir in "$HOME/.local/share/applications" "$HOME/Desktop"; do
+    # The desktop folder is set per user (on Bunya's desktops it's the home directory).
+    DESKTOP_DIR="$(xdg-user-dir DESKTOP 2>/dev/null || echo "$HOME/Desktop")"
+    for dir in "$HOME/.local/share/applications" "$DESKTOP_DIR"; do
         mkdir -p "$dir"
         install -m 755 "$DESKTOP_FILE" "$dir/qgis.desktop"
         # Desktops other than MATE also want the icon marked as trusted.
@@ -491,7 +493,7 @@ if [[ $UPDATE_BASHRC -eq 0 ]]; then
     cat <<EOF
 
 To add a QGIS icon to your desktop and applications menu, run:
-    install -m 755 $DESKTOP_FILE ~/Desktop/
+    install -m 755 $DESKTOP_FILE "$(xdg-user-dir DESKTOP)"
     install -m 755 $DESKTOP_FILE ~/.local/share/applications/
 EOF
 fi

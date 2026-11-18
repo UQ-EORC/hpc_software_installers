@@ -61,8 +61,9 @@ The sourced file sets `<NAME>_HOME` (`CLOUDCOMPARE_HOME`, `MESHLAB_HOME`,
 
 The GUI programs (CloudCompare, MeshLab, QGIS, Segfix) also get an icon on
 your desktop and in the applications menu: the script copies
-`<install_dir>/share/applications/<name>.desktop` to `~/Desktop` and
-`~/.local/share/applications`.
+`<install_dir>/share/applications/<name>.desktop` to your desktop folder and
+`~/.local/share/applications`. On Bunya's desktops the desktop folder is your
+home directory (`xdg-user-dir DESKTOP` prints it).
 
 Pass `-n` to leave `~/.bashrc`, the desktop and the menu alone. That is the
 right choice for an install shared by a group: each user then adds one line to
@@ -70,7 +71,7 @@ their own `~/.bashrc`, and copies the icon if they want it, e.g.
 
 ```bash
 source /path/to/shared/qgis/qgis_env.sh
-install -m 755 /path/to/shared/qgis/share/applications/qgis.desktop ~/Desktop/
+install -m 755 /path/to/shared/qgis/share/applications/qgis.desktop "$(xdg-user-dir DESKTOP)"
 install -m 755 /path/to/shared/qgis/share/applications/qgis.desktop ~/.local/share/applications/
 ```
 
