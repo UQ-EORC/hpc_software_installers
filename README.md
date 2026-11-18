@@ -9,6 +9,7 @@ adds the program to your `PATH`.
 |---|---|---|---|
 | [`build_cloudcompare.sh`](build_cloudcompare.sh) | [CloudCompare](https://www.cloudcompare.org/) 2.13.2 | compiled from source | about 20 min |
 | [`build_qgis.sh`](build_qgis.sh) | [QGIS](https://qgis.org/) 4.2.3 with Python | compiled from source | several hours |
+| [`build_meshlab.sh`](build_meshlab.sh) | [MeshLab](https://www.meshlab.net/) 2025.07 | compiled from source | about 15 min |
 | [`install_segfix.sh`](install_segfix.sh) | [Segfix](https://github.com/UQ-EORC/Segfix) | PyPI or GitHub | a few minutes |
 | [`install_sylva.sh`](install_sylva.sh) | [Sylva](https://github.com/UQ-EORC/Sylva) | PyPI or GitHub | a few minutes (longer with `-g`) |
 
@@ -28,7 +29,7 @@ help. Re-running a script on the same directory updates the install in place.
 
 ## Before you start
 
-- **Compile on a compute node, not a login node.** CloudCompare and QGIS use
+- **Compile on a compute node, not a login node.** CloudCompare, MeshLab and QGIS use
   every core they're given for a long time. Submit them as a job (see
   [below](#building-in-a-batch-job)) or run them in an interactive session.
 - **GUI programs need a desktop session**, e.g. an Open OnDemand desktop. The
@@ -54,8 +55,8 @@ By default each script adds a short block to `~/.bashrc`:
 # <<< qgis <<<
 ```
 
-The sourced file sets `<NAME>_HOME` (`CLOUDCOMPARE_HOME`, `QGIS_HOME`,
-`SEGFIX_HOME`, `SYLVA_HOME`) and puts the launchers on your `PATH`. Re-running
+The sourced file sets `<NAME>_HOME` (`CLOUDCOMPARE_HOME`, `MESHLAB_HOME`,
+`QGIS_HOME`, `SEGFIX_HOME`, `SYLVA_HOME`) and puts the launchers on your `PATH`. Re-running
 a script replaces its block rather than adding another.
 
 Pass `-n` to leave `~/.bashrc` alone. That is the right choice for an install
@@ -89,6 +90,43 @@ can't be downloaded is skipped with a warning rather than stopping the build.
 cloudcompare                                                     # GUI
 cloudcompare -SILENT -O cloud.xyz -C_EXPORT_FMT LAS -SAVE_CLOUDS  # command line, no display needed
 ```
+
+## MeshLab
+
+```bash
+./build_meshlab.sh [options] <install_dir>
+```
+
+| Option | Meaning | Default |
+|---|---|---|
+| `-v VERSION` | MeshLab release | `2025.07` |
+| `-d` | double-precision coordinates | |
+| `-j JOBS` | parallel build jobs | all cores |
+| `-w WORKDIR` | where source and build files go | `$TMPDIR` |
+| `-k` | keep the build files after a successful build | |
+| `-n` | don't edit `~/.bashrc` | |
+
+Builds against the GCCcore 12.3.0 modules (Qt 5.15, Boost, TBB,
+GMP/MPFR, Xerces). MeshLab downloads its other dependencies (CGAL, Embree, libigl,
+lib3mf, libE57Format, ...) during the build, and all of its plugins are
+included. If one of those downloads fails, the plugins that need it are left
+out and the script lists them at the end.
+
+Use `-d` for georeferenced meshes, e.g. in UTM coordinates: single precision
+can't hold such large coordinates exactly, which shows up as jagged, shifted
+geometry. This is the same as the "d" builds MeshLab publishes. It costs some
+memory, so leave it off otherwise.
+
+The prebuilt MeshLab download for Linux isn't used because it needs a newer
+glibc than RHEL 9 has, so several of its plugins don't load.
+
+```bash
+meshlab mesh.ply      # GUI
+```
+
+MeshLab has no command-line mode any more. For scripted processing, use
+[PyMeshLab](https://pymeshlab.readthedocs.io/) (`pip install pymeshlab`),
+which runs the same filters from Python.
 
 ## QGIS
 
@@ -173,7 +211,8 @@ extracted them; see the [Sylva install guide](https://uq-eorc.github.io/Sylva/in
 ```
 
 Save it as e.g. `build_qgis.slurm`, run `sbatch build_qgis.slurm`, and follow
-the progress in `build_qgis-<jobid>.out`. For CloudCompare, 2 hours is plenty.
+the progress in `build_qgis-<jobid>.out`. For CloudCompare or MeshLab, 2 hours
+is plenty.
 
 ## Troubleshooting
 
