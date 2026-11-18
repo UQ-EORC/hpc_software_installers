@@ -12,7 +12,8 @@
 #   -j JOBS      parallel build jobs                     (default: nproc)
 #   -w WORKDIR   where sources/build trees go            (default: $TMPDIR or /tmp)
 #   -k           keep the work directory after a successful build
-#   -n           don't add MESHLAB_HOME / PATH settings to ~/.bashrc
+#   -n           don't add MESHLAB_HOME / PATH settings to ~/.bashrc, or a
+#                MeshLab icon to your desktop and applications menu
 #   -h           show this help
 #
 # After install (and a new shell, or 'source ~/.bashrc'), run:
@@ -205,6 +206,35 @@ if [[ $UPDATE_BASHRC -eq 1 ]]; then
 EOF
 fi
 
+# ---------------------------------------------------------------------------
+# Desktop icon and applications-menu entry. Programs started from the desktop
+# don't read ~/.bashrc, so they point at the launcher by full path.
+# ---------------------------------------------------------------------------
+DESKTOP_FILE="$PREFIX/share/applications/meshlab.desktop"
+mkdir -p "$(dirname "$DESKTOP_FILE")"
+cat > "$DESKTOP_FILE" <<EOF
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=MeshLab
+GenericName=Mesh processing
+Comment=View and process meshes
+Exec="$PREFIX/bin/meshlab" %F
+Icon=$PREFIX/share/icons/hicolor/512x512/apps/meshlab.png
+Terminal=false
+Categories=Graphics;3DGraphics;Viewer;Qt;
+EOF
+
+if [[ $UPDATE_BASHRC -eq 1 ]]; then
+    log "Adding MeshLab to the desktop and applications menu"
+    for dir in "$HOME/.local/share/applications" "$HOME/Desktop"; do
+        mkdir -p "$dir"
+        install -m 755 "$DESKTOP_FILE" "$dir/meshlab.desktop"
+        # Desktops other than MATE also want the icon marked as trusted.
+        gio set "$dir/meshlab.desktop" metadata::trusted true &>/dev/null || true
+    done
+fi
+
 log "Done"
 cat <<EOF
 MeshLab $ML_VERSION installed to: $PREFIX
@@ -212,6 +242,7 @@ Plugins built: $(find "$PREFIX/lib/meshlab/plugins" -name '*.so' | wc -l)
 
 EOF
 if [[ $UPDATE_BASHRC -eq 1 ]]; then
+    echo "MeshLab was added to your desktop and applications menu."
     echo "MESHLAB_HOME and PATH were added to ~/.bashrc. Open a new shell, or run:"
 else
     echo "To set MESHLAB_HOME and PATH, run (or add to your ~/.bashrc):"
@@ -222,6 +253,14 @@ cat <<EOF
 Then run MeshLab with:
     meshlab                     # GUI (uses VirtualGL when available)
 EOF
+if [[ $UPDATE_BASHRC -eq 0 ]]; then
+    cat <<EOF
+
+To add a MeshLab icon to your desktop and applications menu, run:
+    install -m 755 $DESKTOP_FILE ~/Desktop/
+    install -m 755 $DESKTOP_FILE ~/.local/share/applications/
+EOF
+fi
 if [[ -n "$SKIPPED_DEPS" ]]; then
     printf '\n\033[1;33mSome dependencies could not be downloaded; plugins that need them were left out:\033[0m\n%s\n' "$SKIPPED_DEPS"
     echo "Re-run the script later to try building them again."

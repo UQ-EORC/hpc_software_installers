@@ -56,14 +56,22 @@ By default each script adds a short block to `~/.bashrc`:
 ```
 
 The sourced file sets `<NAME>_HOME` (`CLOUDCOMPARE_HOME`, `MESHLAB_HOME`,
-`QGIS_HOME`, `SEGFIX_HOME`, `SYLVA_HOME`) and puts the launchers on your `PATH`. Re-running
-a script replaces its block rather than adding another.
+`QGIS_HOME`, `SEGFIX_HOME`, `SYLVA_HOME`) and puts the launchers on your
+`PATH`. Re-running a script replaces its block rather than adding another.
 
-Pass `-n` to leave `~/.bashrc` alone. That is the right choice for an install
-shared by a group: each user then adds one line to their own `~/.bashrc`, e.g.
+The GUI programs (CloudCompare, MeshLab, QGIS, Segfix) also get an icon on
+your desktop and in the applications menu: the script copies
+`<install_dir>/share/applications/<name>.desktop` to `~/Desktop` and
+`~/.local/share/applications`.
+
+Pass `-n` to leave `~/.bashrc`, the desktop and the menu alone. That is the
+right choice for an install shared by a group: each user then adds one line to
+their own `~/.bashrc`, and copies the icon if they want it, e.g.
 
 ```bash
 source /path/to/shared/qgis/qgis_env.sh
+install -m 755 /path/to/shared/qgis/share/applications/qgis.desktop ~/Desktop/
+install -m 755 /path/to/shared/qgis/share/applications/qgis.desktop ~/.local/share/applications/
 ```
 
 ## CloudCompare
@@ -78,7 +86,7 @@ source /path/to/shared/qgis/qgis_env.sh
 | `-j JOBS` | parallel build jobs | all cores |
 | `-w WORKDIR` | where source and build files go | `$TMPDIR` |
 | `-k` | keep the build files after a successful build | |
-| `-n` | don't edit `~/.bashrc` | |
+| `-n` | don't edit `~/.bashrc` or add desktop icons | |
 
 Builds against the GCCcore 12.3.0 modules (Qt 5.15, Boost, Xerces), plus Eigen
 and LASzip, which it downloads. 25 plugins are included: LAS and E57 file
@@ -104,7 +112,7 @@ cloudcompare -SILENT -O cloud.xyz -C_EXPORT_FMT LAS -SAVE_CLOUDS  # command line
 | `-j JOBS` | parallel build jobs | all cores |
 | `-w WORKDIR` | where source and build files go | `$TMPDIR` |
 | `-k` | keep the build files after a successful build | |
-| `-n` | don't edit `~/.bashrc` | |
+| `-n` | don't edit `~/.bashrc` or add desktop icons | |
 
 Builds against the GCCcore 12.3.0 modules (Qt 5.15, Boost, TBB,
 GMP/MPFR, Xerces). MeshLab downloads its other dependencies (CGAL, Embree, libigl,
@@ -165,7 +173,7 @@ QtKeychain is built without libsecret, which the cluster doesn't have.
 |---|---|
 | `-v VERSION` | install this PyPI release (default: latest) |
 | `-g REF` | install from a GitHub branch or tag instead of PyPI |
-| `-n` | don't edit `~/.bashrc` |
+| `-n` | don't edit `~/.bashrc` or add a desktop icon |
 
 Installs Segfix into its own Python 3.12 environment. With `-g`, the source is
 kept in `<install_dir>/src/Segfix` as an editable install, so Segfix's built-in

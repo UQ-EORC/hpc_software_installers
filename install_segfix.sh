@@ -10,7 +10,8 @@
 #   -v VERSION   Segfix release from PyPI, e.g. 1.3.0   (default: latest)
 #   -g REF       install from a GitHub checkout of branch/tag REF instead of
 #                PyPI (editable, so Segfix's updater uses 'git pull')
-#   -n           don't add SEGFIX_HOME / PATH settings to ~/.bashrc
+#   -n           don't add SEGFIX_HOME / PATH settings to ~/.bashrc, or a
+#                Segfix icon to your desktop and applications menu
 #   -h           show this help
 #
 # After install (and a new shell, or 'source ~/.bashrc'), run:
@@ -28,7 +29,7 @@ RUNTIME_MODULES=(
     python/3.12.3-gcccore-13.3.0
 )
 
-usage() { sed -n '3,18p' "$0" | sed 's/^# \{0,1\}//'; exit "${1:-0}"; }
+usage() { sed -n '3,19p' "$0" | sed 's/^# \{0,1\}//'; exit "${1:-0}"; }
 log()   { printf '\n\033[1;34m==> %s\033[0m\n' "$*"; }
 die()   { printf '\033[1;31mERROR: %s\033[0m\n' "$*" >&2; exit 1; }
 
@@ -154,12 +155,42 @@ if [[ $UPDATE_BASHRC -eq 1 ]]; then
 EOF
 fi
 
+# ---------------------------------------------------------------------------
+# Desktop icon and applications-menu entry. Programs started from the desktop
+# don't read ~/.bashrc, so they point at the launcher by full path.
+# ---------------------------------------------------------------------------
+DESKTOP_FILE="$PREFIX/share/applications/segfix.desktop"
+mkdir -p "$(dirname "$DESKTOP_FILE")"
+cat > "$DESKTOP_FILE" <<EOF
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=Segfix
+GenericName=Point cloud segmentation editor
+Comment=Fix instance segmentation of tree point clouds
+Exec="$PREFIX/bin/segfix" %F
+Icon=applications-graphics
+Terminal=false
+Categories=Graphics;3DGraphics;Qt;
+EOF
+
+if [[ $UPDATE_BASHRC -eq 1 ]]; then
+    log "Adding Segfix to the desktop and applications menu"
+    for dir in "$HOME/.local/share/applications" "$HOME/Desktop"; do
+        mkdir -p "$dir"
+        install -m 755 "$DESKTOP_FILE" "$dir/segfix.desktop"
+        # Desktops other than MATE also want the icon marked as trusted.
+        gio set "$dir/segfix.desktop" metadata::trusted true &>/dev/null || true
+    done
+fi
+
 log "Done"
 cat <<EOF
 Segfix $INSTALLED_VERSION installed to: $PREFIX
 
 EOF
 if [[ $UPDATE_BASHRC -eq 1 ]]; then
+    echo "Segfix was added to your desktop and applications menu."
     echo "SEGFIX_HOME and PATH were added to ~/.bashrc. Open a new shell, or run:"
 else
     echo "To set SEGFIX_HOME and PATH, run (or add to your ~/.bashrc):"
@@ -170,3 +201,11 @@ cat <<EOF
 Then run Segfix with:
     segfix                                 # GUI (uses VirtualGL when available)
 EOF
+if [[ $UPDATE_BASHRC -eq 0 ]]; then
+    cat <<EOF
+
+To add a Segfix icon to your desktop and applications menu, run:
+    install -m 755 $DESKTOP_FILE ~/Desktop/
+    install -m 755 $DESKTOP_FILE ~/.local/share/applications/
+EOF
+fi

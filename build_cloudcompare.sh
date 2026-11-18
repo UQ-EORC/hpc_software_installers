@@ -11,7 +11,8 @@
 #   -j JOBS      parallel build jobs                     (default: nproc)
 #   -w WORKDIR   where sources/build trees go            (default: $TMPDIR or /tmp)
 #   -k           keep the work directory after a successful build
-#   -n           don't add CLOUDCOMPARE_HOME / PATH settings to ~/.bashrc
+#   -n           don't add CLOUDCOMPARE_HOME / PATH settings to ~/.bashrc, or a
+#                CloudCompare icon to your desktop and applications menu
 #   -h           show this help
 #
 # After install (and a new shell, or 'source ~/.bashrc'), run:
@@ -40,7 +41,7 @@ MODULES=(
     ninja/1.11.1-gcccore-12.3.0
 )
 
-usage() { sed -n '3,20p' "$0" | sed 's/^# \{0,1\}//'; exit "${1:-0}"; }
+usage() { sed -n '3,21p' "$0" | sed 's/^# \{0,1\}//'; exit "${1:-0}"; }
 log()   { printf '\n\033[1;34m==> %s\033[0m\n' "$*"; }
 die()   { printf '\033[1;31mERROR: %s\033[0m\n' "$*" >&2; exit 1; }
 
@@ -217,6 +218,8 @@ cmake --build "$WORKDIR/build" -j "$JOBS"
 
 log "Installing to $PREFIX"
 cmake --install "$WORKDIR/build"
+mkdir -p "$PREFIX/share/icons"
+cp "$SRC/qCC/images/icon/cc_icon_256.png" "$PREFIX/share/icons/cloudcompare.png"
 
 # ---------------------------------------------------------------------------
 # Launcher: 'cloudcompare' command that loads the runtime modules, then starts
@@ -296,12 +299,42 @@ if [[ $UPDATE_BASHRC -eq 1 ]]; then
 EOF
 fi
 
+# ---------------------------------------------------------------------------
+# Desktop icon and applications-menu entry. Programs started from the desktop
+# don't read ~/.bashrc, so they point at the launcher by full path.
+# ---------------------------------------------------------------------------
+DESKTOP_FILE="$PREFIX/share/applications/cloudcompare.desktop"
+mkdir -p "$(dirname "$DESKTOP_FILE")"
+cat > "$DESKTOP_FILE" <<EOF
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=CloudCompare
+GenericName=Point cloud processing
+Comment=View and process 3D point clouds and meshes
+Exec="$PREFIX/bin/cloudcompare" %F
+Icon=$PREFIX/share/icons/cloudcompare.png
+Terminal=false
+Categories=Graphics;3DGraphics;Viewer;Qt;
+EOF
+
+if [[ $UPDATE_BASHRC -eq 1 ]]; then
+    log "Adding CloudCompare to the desktop and applications menu"
+    for dir in "$HOME/.local/share/applications" "$HOME/Desktop"; do
+        mkdir -p "$dir"
+        install -m 755 "$DESKTOP_FILE" "$dir/cloudcompare.desktop"
+        # Desktops other than MATE also want the icon marked as trusted.
+        gio set "$dir/cloudcompare.desktop" metadata::trusted true &>/dev/null || true
+    done
+fi
+
 log "Done"
 cat <<EOF
 CloudCompare $CC_VERSION installed to: $PREFIX
 
 EOF
 if [[ $UPDATE_BASHRC -eq 1 ]]; then
+    echo "CloudCompare was added to your desktop and applications menu."
     echo "CLOUDCOMPARE_HOME and PATH were added to ~/.bashrc. Open a new shell, or run:"
 else
     echo "To set CLOUDCOMPARE_HOME and PATH, run (or add to your ~/.bashrc):"
@@ -313,6 +346,14 @@ Then run CloudCompare with:
     cloudcompare                           # GUI (uses VirtualGL when available)
     cloudcompare -SILENT -O cloud.las ...  # command-line mode
 EOF
+if [[ $UPDATE_BASHRC -eq 0 ]]; then
+    cat <<EOF
+
+To add a CloudCompare icon to your desktop and applications menu, run:
+    install -m 755 $DESKTOP_FILE ~/Desktop/
+    install -m 755 $DESKTOP_FILE ~/.local/share/applications/
+EOF
+fi
 if [[ ${#SKIPPED[@]} -gt 0 ]]; then
     printf '\n\033[1;33mSkipped plugins (sources unavailable): %s\033[0m\n' "${SKIPPED[*]}"
     echo "Re-run the script later to try building them again."
