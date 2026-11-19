@@ -10,6 +10,7 @@ adds the program to your `PATH`.
 | [`build_cloudcompare.sh`](build_cloudcompare.sh) | [CloudCompare](https://www.cloudcompare.org/) 2.13.2 | compiled from source | about 20 min |
 | [`build_qgis.sh`](build_qgis.sh) | [QGIS](https://qgis.org/) 4.2.3 with Python | compiled from source | several hours |
 | [`build_meshlab.sh`](build_meshlab.sh) | [MeshLab](https://www.meshlab.net/) 2025.07 | compiled from source | about 15 min |
+| [`install_libreoffice_calc.sh`](install_libreoffice_calc.sh) | [LibreOffice](https://www.libreoffice.org/) Calc, newest release | official RPMs, unpacked | a few minutes |
 | [`install_segfix.sh`](install_segfix.sh) | [Segfix](https://github.com/UQ-EORC/Segfix) | PyPI or GitHub | a few minutes |
 | [`install_sylva.sh`](install_sylva.sh) | [Sylva](https://github.com/UQ-EORC/Sylva) | PyPI or GitHub | a few minutes (longer with `-g`) |
 
@@ -55,11 +56,11 @@ By default each script adds a short block to `~/.bashrc`:
 # <<< qgis <<<
 ```
 
-The sourced file sets `<NAME>_HOME` (`CLOUDCOMPARE_HOME`, `MESHLAB_HOME`,
-`QGIS_HOME`, `SEGFIX_HOME`, `SYLVA_HOME`) and puts the launchers on your
+The sourced file sets `<NAME>_HOME` (`CLOUDCOMPARE_HOME`, `LIBREOFFICE_HOME`,
+`MESHLAB_HOME`, `QGIS_HOME`, `SEGFIX_HOME`, `SYLVA_HOME`) and puts the launchers on your
 `PATH`. Re-running a script replaces its block rather than adding another.
 
-The GUI programs (CloudCompare, MeshLab, QGIS, Segfix) also get an icon on
+The GUI programs (CloudCompare, LibreOffice Calc, MeshLab, QGIS, Segfix) also get an icon on
 your desktop and in the applications menu: the script copies
 `<install_dir>/share/applications/<name>.desktop` to your desktop folder and
 `~/.local/share/applications`. On Bunya's desktops the desktop folder is your
@@ -163,6 +164,28 @@ qgis_process run native:buffer --INPUT=in.gpkg --DISTANCE=10 --OUTPUT=out.gpkg
 
 Not included: QGIS Server, QtWebEngine (HTML in some widgets) and Draco.
 QtKeychain is built without libsecret, which the cluster doesn't have.
+
+## LibreOffice Calc
+
+```bash
+./install_libreoffice_calc.sh [options] <install_dir>
+```
+
+| Option | Meaning |
+|---|---|
+| `-v VERSION` | LibreOffice release, e.g. `26.8.3` (default: newest stable) |
+| `-n` | don't edit `~/.bashrc` or add a desktop icon |
+
+Downloads LibreOffice's official RPMs and unpacks only the parts Calc needs
+(about 600 MB), so it needs no root and no compiling. Writer, Impress, Draw and
+Base aren't included. It doesn't depend on the cluster's modules or CPU type,
+so it runs on any node.
+
+```bash
+localc data.xlsx                                  # GUI
+localc --headless --convert-to xlsx data.csv      # convert, no display needed
+localc --headless --convert-to csv data.xlsx
+```
 
 ## Segfix
 
